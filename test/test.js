@@ -1483,6 +1483,32 @@ function testHSET() {
     });
 }
 
+function expectQUEUED(context) {
+    return function (err, queued) {
+        if (err) assert.fail(err, context);
+        checkEqual(typeof(queued), 'string', context);
+        checkEqual(queued, 'QUEUED', context);
+    };
+}
+
+function testMULTI() {
+    client.multi(expectOK("testMULTI"));
+    client.incr('counter', expectQUEUED("testMULTI"))
+    client.incr('counter', expectQUEUED("testMULTI"))
+    client.exec(function (err, values) {
+        if (err) assert.fail(err, "testMULTI");
+        checkEqual(values[0], 1, "testMULTI");
+        checkEqual(values[1], 2, "testMULTI");
+    });
+}
+
+function testDISCARD() {
+    client.multi(expectOK("testDISCARD"));
+    client.incrby('counter', 2, expectNumber(2, "testDISCARD"))
+    client.discard(expectOK("testDISCARD"));
+    client.incr('counter', expectNumber(1, "testDISCARD"))
+}
+
 // Note that the user of this client should add a listener for "connect" via
 // client.stream.addListener("connect", function () { ... }); in order to
 // subscribe to channels/classes of interest after each connection is established
